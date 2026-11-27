@@ -69,6 +69,10 @@ class PPOWithRMA:
         self.val_buf.append(float(value))
         self.ctx_buf.append(ctx_array.copy())
 
+    def normalize_obs(self, obs: np.ndarray) -> np.ndarray:
+        """Normalize with the current running stats (use this at rollout time)."""
+        return self.obs_rms.normalize(obs).astype(np.float32)
+
     def compute_advantages(self, last_value=0.0):
         """
         GAE-Lambda advantage computation.
@@ -97,11 +101,10 @@ class PPOWithRMA:
         old_logp = np.array(self.logp_buf, dtype=np.float32)
         ctx = np.array(self.ctx_buf, dtype=np.float32)  # [N, T, ctx_dim]
 
-        # Update normalization
-        self.obs_rms.update(obs)
-
-        # Normalize obs
+        # Normalize obs with the SAME stats the rollout used (so old_logp matches),
+        # then fold this batch into the running stats for the next rollout.
         obs_norm = self.obs_rms.normalize(obs)
+        self.obs_rms.update(obs)
 
         # Compute advantages
         # For dummy env we use last_value = 0

@@ -43,7 +43,7 @@ def main():
             ctx_t = torch.tensor(ctx_array, dtype=torch.float32, device=device)
             with torch.no_grad():
                 z = algo.encoder(ctx_t)
-                obs_t = torch.tensor(obs[None, :], dtype=torch.float32, device=device)
+                obs_t = torch.tensor(algo.normalize_obs(obs)[None, :], dtype=torch.float32, device=device)
                 act_t, logp_t, val_t = algo.policy.get_action_and_value(obs_t, z)
 
             action = act_t.cpu().numpy()[0]
